@@ -35,7 +35,7 @@ export function getDb(): Pool {
         "id" TEXT NOT NULL PRIMARY KEY,
         "name" TEXT NOT NULL,
         "email" TEXT NOT NULL UNIQUE,
-        "emailVerified" INTEGER NOT NULL DEFAULT 0,
+        "emailVerified" BOOLEAN NOT NULL DEFAULT FALSE,
         "image" TEXT,
         "createdAt" DATE NOT NULL DEFAULT NOW(),
         "updatedAt" DATE NOT NULL DEFAULT NOW()
@@ -146,6 +146,18 @@ export function getDb(): Pool {
   })().catch((err) => {
     console.error('[db] Failed to create tables:', err)
   })
+    await _pool!.query(`
+      ALTER TABLE "user"
+        ALTER COLUMN "emailVerified" TYPE BOOLEAN
+          USING CASE
+            WHEN LOWER("emailVerified"::text) IN ('1', 'true', 't') THEN TRUE
+            ELSE FALSE
+          END,
+        ALTER COLUMN "createdAt" TYPE TIMESTAMPTZ
+          USING "createdAt"::timestamp AT TIME ZONE 'UTC',
+        ALTER COLUMN "updatedAt" TYPE TIMESTAMPTZ
+          USING "updatedAt"::timestamp AT TIME ZONE 'UTC';
+    `)
 
   return _pool
 }
