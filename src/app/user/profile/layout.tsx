@@ -1,6 +1,8 @@
 import ProfileShell from "@/components/dashboard/ProfileShell"
 import { requireServerSession } from "@/lib/auth"
 
+export const dynamic = "force-dynamic"
+
 export default async function ProfileLayout({
   children,
 }: Readonly<{

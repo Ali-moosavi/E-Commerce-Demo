@@ -8,7 +8,7 @@ import { authClient } from "@/lib/auth-clients";
 import type { ProductCategory } from "@/types/types";
 
 export default function HeaderWraper() {
-    const { data: session, isPending, refetch: refetchSession } = authClient.useSession()
+    const { data: session, isPending } = authClient.useSession()
 
     const { products, status } = useAppSelector((state) => state.Productstate)
 
@@ -19,11 +19,7 @@ export default function HeaderWraper() {
         dispatch(GetProductsAction())
        
      },[dispatch])
-     const Location = usePathname()
-
-    useEffect(() => {
-        void refetchSession()
-    }, [Location, refetchSession])
+    const Location = usePathname()
     let CategoryHeader = false
     let registerHeader = false
     const profileHeader = Location.startsWith(`/user/profile`)
