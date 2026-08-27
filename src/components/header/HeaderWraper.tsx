@@ -24,7 +24,6 @@ export default function HeaderWraper() {
     useEffect(() => {
         void refetchSession()
     }, [Location, refetchSession])
-    let Headerstates = false
     let CategoryHeader = false
     let registerHeader = false
     const profileHeader = Location.startsWith(`/user/profile`)
@@ -32,7 +31,6 @@ export default function HeaderWraper() {
 
     products?.forEach((category: ProductCategory) => {
         if (Location.startsWith(`/category/${category.categoryid}/`)){
-            Headerstates = true
         }
     })
 
@@ -49,7 +47,6 @@ export default function HeaderWraper() {
     return (
         <div>
             <MainHeader
-                Headerstates={Headerstates}
                 CategoryHeader={CategoryHeader}
                 isLoading={status === 'idle' || status === 'loading' || isPending}
                 registerHeader = {registerHeader}

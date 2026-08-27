@@ -12,11 +12,7 @@ const initialState:INITIALSTATES = {
 const ProductsSlice = createSlice({
     name:'ProductsSlice',
     initialState,
-    reducers:{
-        changefilteredItems(state , action){
-            state.filteredItems = action.payload
-        }
-    },
+    reducers:{},
     extraReducers:(builder)=>{
         builder.addCase(GetProductsAction.pending , (state)=>{
             state.status = 'loading'
@@ -32,4 +28,3 @@ const ProductsSlice = createSlice({
 })
 
 export default ProductsSlice.reducer
-export const {changefilteredItems} = ProductsSlice.actions

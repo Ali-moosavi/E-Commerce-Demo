@@ -12,7 +12,7 @@ export interface CardProps {
   badge?: string
 }
 
-const Card = ({ name, describtion, price, rate, image, badge }: CardProps) => {
+const Card = ({ name, price, rate, image, badge }: CardProps) => {
   const displayName = name.length > 92 ? `${name.slice(0, 92)}...` : name
   
   const [size, setSize] = useState<CardVariant>('smalllist')

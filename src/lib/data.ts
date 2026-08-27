@@ -1,11 +1,7 @@
 import { getDb, ready } from '@/lib/db'
 import {
-  randomBytes,
   randomUUID,
-  scrypt as scryptCallback,
-  timingSafeEqual,
 } from 'node:crypto'
-import { promisify } from 'node:util'
 import type {
   PRODUCT_TYPE,
   CATEGORY_TYPE,
@@ -27,8 +23,6 @@ export type StoredUser = {
 }
 
 export type UserRecord = Omit<StoredUser, 'passwordHash'>
-
-const scrypt = promisify(scryptCallback)
 
 function normalizeIdentifier(identifier: string) {
   return identifier.trim().toLowerCase()
@@ -62,37 +56,6 @@ function toUserRecord(user: StoredUser): UserRecord {
   }
 }
 
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString('hex')
-  const derivedKey = (await scrypt(password, salt, 64)) as Buffer
-
-  return `scrypt$${salt}$${derivedKey.toString('hex')}`
-}
-
-export async function verifyPassword(
-  password: string,
-  storedPasswordHash: string,
-) {
-  const [algorithm, salt, storedHash] = storedPasswordHash.split('$')
-
-  if (algorithm !== 'scrypt' || !salt || !storedHash) {
-    return false
-  }
-
-  try {
-    const derivedKey = (await scrypt(password, salt, 64)) as Buffer
-    const storedKey = Buffer.from(storedHash, 'hex')
-
-    if (derivedKey.length !== storedKey.length) {
-      return false
-    }
-
-    return timingSafeEqual(derivedKey, storedKey)
-  } catch {
-    return false
-  }
-}
-
 function nodeId(node: CATEGORY_TYPE): number | undefined {
   return node.categoryid ?? node.id
 }
@@ -103,26 +66,26 @@ export function getCategoryTree(): CATEGORY_TYPE[] {
 
 export function findCategoryById(
   targetId: number,
-  nodes: CATEGORY_TYPE[] = getCategoryTree(),
+  categories: CATEGORY_TYPE[] = getCategoryTree(),
 ): CATEGORY_TYPE | null {
-  for (const node of nodes) {
-    if (Number(nodeId(node)) === targetId) return node
-    if (node.children?.length) {
-      const found = findCategoryById(targetId, node.children)
+  categories.map((category)=>{
+    if (Number(nodeId(category)) === targetId) return category
+    if (category.children?.length) {
+      const found = findCategoryById(targetId, category.children)
       if (found) return found
     }
-  }
+  }) 
   return null
 }
 
-export function collectCategoryIds(node: CATEGORY_TYPE): number[] {
-  const ids: number[] = []
-  const walk = (current: CATEGORY_TYPE) => {
-    const currentId = Number(nodeId(current))
-    if (!Number.isNaN(currentId)) ids.push(currentId)
-    current.children?.forEach(walk)
+export function collectCategoryIds(category: CATEGORY_TYPE): number[] {
+  const ids:number[] = []
+  const walk = (currentCategory: CATEGORY_TYPE) => {
+    const currentId = Number(nodeId(currentCategory))
+    if (Number.isFinite(currentId)) ids.push(currentId)
+    currentCategory.children?.forEach(walk)
   }
-  walk(node)
+  walk(category)
   return ids
 }
 
@@ -186,7 +149,7 @@ export async function createUser(
     [
       id,
       identifier,
-      '', // placeholder — better-auth handles real passwords
+      '', 
       input.termsAccepted ? 1 : 0,
       input.fullname ?? null,
       input.identifierComponent ?? null,
@@ -241,7 +204,7 @@ export async function updateUser(
 
   if (input.password !== undefined) {
     setClauses.push(`"passwordHash" = $${paramIndex}`)
-    values.push('') // placeholder
+    values.push('') 
     paramIndex++
   }
 

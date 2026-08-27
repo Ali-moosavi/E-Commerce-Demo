@@ -19,7 +19,7 @@ export default function HeaderCategory({ isLoading = false }: { isLoading?: bool
   return (
     <li
       onMouseEnter={() => setListStats(true)}
-    
+
       className="relative z-20 hidden text-[16px] lg:block"
     >
       <button

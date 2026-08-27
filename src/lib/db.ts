@@ -27,9 +27,7 @@ export function getDb(): Pool {
     ssl: isRemote ? { rejectUnauthorized: false } : undefined,
   })
 
-  // Create ALL tables on first connection — including better-auth's own tables
   _ready = (async () => {
-    // ── better-auth tables ──────────────────────────────────
     await _pool!.query(`
       CREATE TABLE IF NOT EXISTS "user" (
         "id" TEXT NOT NULL PRIMARY KEY,

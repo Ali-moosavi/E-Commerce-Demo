@@ -5,10 +5,9 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import HeaderCategory from "./HeaderCategory";
 import MobileBottomNavigation from "./MobileBottomNavigation";
 import Link from "next/link";
-import { Bell, ChevronDown, Headphones, Settings, UserRoundIcon } from "lucide-react";
+import { Bell, Headphones, Settings, UserRoundIcon } from "lucide-react";
 
 export  default function MainHeader({
-    Headerstates,
     CategoryHeader,
     isLoading,
     registerHeader,
@@ -16,7 +15,6 @@ export  default function MainHeader({
     profile,
     session,
 }: {
-    Headerstates?: boolean
     CategoryHeader?: boolean
     isLoading?: boolean
     registerHeader?:boolean
