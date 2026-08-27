@@ -113,11 +113,19 @@ export function getDb(): Pool {
     `)
     await _pool!.query(`
       ALTER TABLE "user"
+        ALTER COLUMN "emailVerified" DROP DEFAULT;
+    `)
+    await _pool!.query(`
+      ALTER TABLE "user"
         ALTER COLUMN "emailVerified" TYPE BOOLEAN
           USING CASE
             WHEN LOWER("emailVerified"::text) IN ('1', 'true', 't') THEN TRUE
             ELSE FALSE
-          END,
+          END;
+    `)
+    await _pool!.query(`
+      ALTER TABLE "user"
+        ALTER COLUMN "emailVerified" SET DEFAULT FALSE,
         ALTER COLUMN "createdAt" TYPE TIMESTAMPTZ
           USING "createdAt"::timestamp AT TIME ZONE 'UTC',
         ALTER COLUMN "updatedAt" TYPE TIMESTAMPTZ
