@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getDb } from "@/lib/db";
+import { getDb, ready } from "@/lib/db";
 
 function getBaseUrl(): string {
   if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
@@ -24,6 +24,7 @@ export const auth = betterAuth({
 });
 
 export async function getServerSession() {
+  await ready();
   return auth.api.getSession({
     headers: await headers(),
   });

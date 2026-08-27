@@ -43,6 +43,7 @@ export async function userExist({ identifier }: { identifier: string }) {
   if (!email) return false
 
   try {
+    await ready()
     const context = await auth.$context
     const userRecord = await context.internalAdapter.findUserByEmail(email)
     return Boolean(userRecord?.user)
@@ -62,6 +63,7 @@ export async function signUpUser(data: CreateUserInput): Promise<AuthResult> {
   }
 
   try {
+    await ready()
     const response = await auth.api.signUpEmail({
       body: {
         email: parsed.data.identifier.trim().toLowerCase(),
@@ -79,6 +81,7 @@ export async function signUpUser(data: CreateUserInput): Promise<AuthResult> {
       },
     }
   } catch (error) {
+    console.error('[auth] signUpEmail failed:', error)
     return {
       success: false,
       error: getAuthErrorMessage(error),
@@ -94,6 +97,7 @@ export async function signInUser({
   password: string
 }): Promise<AuthResult> {
   try {
+    await ready()
     const response = await auth.api.signInEmail({
       body: {
         email: identifier.trim().toLowerCase(),
@@ -110,6 +114,7 @@ export async function signInUser({
       },
     }
   } catch (error) {
+    console.error('[auth] signInEmail failed:', error)
     return {
       success: false,
       error: getAuthErrorMessage(error),
