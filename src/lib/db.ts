@@ -111,6 +111,18 @@ export function getDb(): Pool {
         ALTER COLUMN "updatedAt" TYPE TIMESTAMPTZ
           USING "updatedAt"::timestamp AT TIME ZONE 'UTC';
     `)
+    await _pool!.query(`
+      ALTER TABLE "user"
+        ALTER COLUMN "emailVerified" TYPE BOOLEAN
+          USING CASE
+            WHEN LOWER("emailVerified"::text) IN ('1', 'true', 't') THEN TRUE
+            ELSE FALSE
+          END,
+        ALTER COLUMN "createdAt" TYPE TIMESTAMPTZ
+          USING "createdAt"::timestamp AT TIME ZONE 'UTC',
+        ALTER COLUMN "updatedAt" TYPE TIMESTAMPTZ
+          USING "updatedAt"::timestamp AT TIME ZONE 'UTC';
+    `)
 
     // Indexes for better-auth
     await _pool!.query(`CREATE INDEX IF NOT EXISTS "session_userId_idx" ON "session" ("userId");`)
@@ -146,18 +158,6 @@ export function getDb(): Pool {
   })().catch((err) => {
     console.error('[db] Failed to create tables:', err)
   })
-    await _pool!.query(`
-      ALTER TABLE "user"
-        ALTER COLUMN "emailVerified" TYPE BOOLEAN
-          USING CASE
-            WHEN LOWER("emailVerified"::text) IN ('1', 'true', 't') THEN TRUE
-            ELSE FALSE
-          END,
-        ALTER COLUMN "createdAt" TYPE TIMESTAMPTZ
-          USING "createdAt"::timestamp AT TIME ZONE 'UTC',
-        ALTER COLUMN "updatedAt" TYPE TIMESTAMPTZ
-          USING "updatedAt"::timestamp AT TIME ZONE 'UTC';
-    `)
 
   return _pool
 }
