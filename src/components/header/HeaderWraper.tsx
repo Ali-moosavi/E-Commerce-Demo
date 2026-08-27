@@ -1,14 +1,23 @@
 'use client'
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAppDispatch , useAppSelector } from "@/redux/setup/hooks";
 import { GetProductsAction } from "@/redux/features/products/ProductsService";
 import MainHeader from "./MainHeader";
-import { authClient } from "@/lib/auth-clients";
 import type { ProductCategory } from "@/types/types";
 
+type HeaderSession = {
+    session?: {
+        token?: string
+    } | null
+    user?: {
+        id?: string
+    } | null
+} | null
+
 export default function HeaderWraper() {
-    const { data: session, isPending } = authClient.useSession()
+    const [session, setSession] = useState<HeaderSession>(null)
+    const [isPending, setIsPending] = useState(true)
 
     const { products, status } = useAppSelector((state) => state.Productstate)
 
@@ -17,9 +26,21 @@ export default function HeaderWraper() {
 
     useEffect(()=>{
         dispatch(GetProductsAction())
-       
      },[dispatch])
     const Location = usePathname()
+
+    useEffect(() => {
+        const controller = new AbortController()
+        setIsPending(true)
+
+        fetch('/api/auth/get-session', { signal: controller.signal })
+            .then((response) => response.ok ? response.json() : null)
+            .then((nextSession: HeaderSession) => setSession(nextSession))
+            .catch(() => setSession(null))
+            .finally(() => setIsPending(false))
+
+        return () => controller.abort()
+    }, [Location])
     let CategoryHeader = false
     let registerHeader = false
     const profileHeader = Location.startsWith(`/user/profile`)
