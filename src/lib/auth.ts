@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { getDb, ready } from "@/lib/db";
 
 function getBaseUrl(): string {
-  if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
+  const configuredUrl = process.env.BETTER_AUTH_URL;
+  const isLocalUrl = configuredUrl?.includes("localhost") || configuredUrl?.includes("127.0.0.1");
+
+  if (configuredUrl && (!isLocalUrl || !process.env.VERCEL_URL)) return configuredUrl;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   if (process.env.VERCEL_BRANCH_URL)
     return `https://${process.env.VERCEL_BRANCH_URL}`;

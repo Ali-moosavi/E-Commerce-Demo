@@ -44,10 +44,10 @@ export function getDb(): Pool {
     await _pool!.query(`
       CREATE TABLE IF NOT EXISTS "session" (
         "id" TEXT NOT NULL PRIMARY KEY,
-        "expiresAt" DATE NOT NULL,
+        "expiresAt" TIMESTAMPTZ NOT NULL,
         "token" TEXT NOT NULL UNIQUE,
-        "createdAt" DATE NOT NULL DEFAULT NOW(),
-        "updatedAt" DATE NOT NULL DEFAULT NOW(),
+        "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         "ipAddress" TEXT,
         "userAgent" TEXT,
         "userId" TEXT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
@@ -63,12 +63,12 @@ export function getDb(): Pool {
         "accessToken" TEXT,
         "refreshToken" TEXT,
         "idToken" TEXT,
-        "accessTokenExpiresAt" DATE,
-        "refreshTokenExpiresAt" DATE,
+        "accessTokenExpiresAt" TIMESTAMPTZ,
+        "refreshTokenExpiresAt" TIMESTAMPTZ,
         "scope" TEXT,
         "password" TEXT,
-        "createdAt" DATE NOT NULL DEFAULT NOW(),
-        "updatedAt" DATE NOT NULL DEFAULT NOW()
+        "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `)
     await _pool!.query(`
@@ -76,10 +76,40 @@ export function getDb(): Pool {
         "id" TEXT NOT NULL PRIMARY KEY,
         "identifier" TEXT NOT NULL,
         "value" TEXT NOT NULL,
-        "expiresAt" DATE NOT NULL,
-        "createdAt" DATE NOT NULL DEFAULT NOW(),
-        "updatedAt" DATE NOT NULL DEFAULT NOW()
+        "expiresAt" TIMESTAMPTZ NOT NULL,
+        "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
+    `)
+
+    await _pool!.query(`
+      ALTER TABLE "session"
+        ALTER COLUMN "expiresAt" TYPE TIMESTAMPTZ
+          USING "expiresAt"::timestamp AT TIME ZONE 'UTC',
+        ALTER COLUMN "createdAt" TYPE TIMESTAMPTZ
+          USING "createdAt"::timestamp AT TIME ZONE 'UTC',
+        ALTER COLUMN "updatedAt" TYPE TIMESTAMPTZ
+          USING "updatedAt"::timestamp AT TIME ZONE 'UTC';
+    `)
+    await _pool!.query(`
+      ALTER TABLE "verification"
+        ALTER COLUMN "expiresAt" TYPE TIMESTAMPTZ
+          USING "expiresAt"::timestamp AT TIME ZONE 'UTC',
+        ALTER COLUMN "createdAt" TYPE TIMESTAMPTZ
+          USING "createdAt"::timestamp AT TIME ZONE 'UTC',
+        ALTER COLUMN "updatedAt" TYPE TIMESTAMPTZ
+          USING "updatedAt"::timestamp AT TIME ZONE 'UTC';
+    `)
+    await _pool!.query(`
+      ALTER TABLE "account"
+        ALTER COLUMN "accessTokenExpiresAt" TYPE TIMESTAMPTZ
+          USING "accessTokenExpiresAt"::timestamp AT TIME ZONE 'UTC',
+        ALTER COLUMN "refreshTokenExpiresAt" TYPE TIMESTAMPTZ
+          USING "refreshTokenExpiresAt"::timestamp AT TIME ZONE 'UTC',
+        ALTER COLUMN "createdAt" TYPE TIMESTAMPTZ
+          USING "createdAt"::timestamp AT TIME ZONE 'UTC',
+        ALTER COLUMN "updatedAt" TYPE TIMESTAMPTZ
+          USING "updatedAt"::timestamp AT TIME ZONE 'UTC';
     `)
 
     // Indexes for better-auth

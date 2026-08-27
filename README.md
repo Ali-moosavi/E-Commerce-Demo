@@ -34,3 +34,16 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+### Required environment variables
+
+Configure these variables in the Vercel project for the Production environment, then redeploy:
+
+```text
+DATABASE_URL=your-Neon-or-other-PostgreSQL-connection-string
+BETTER_AUTH_SECRET=a-long-random-secret
+BETTER_AUTH_URL=https://your-production-domain.vercel.app
+NEXT_PUBLIC_BETTER_AUTH_URL=https://your-production-domain.vercel.app
+```
+
+Do not use `http://localhost:3000` for either auth URL in Vercel. The database must be persistent PostgreSQL; a local file or `db.json` will not work in Vercel serverless functions. On the first request, the app creates the Better Auth and cart tables automatically.
