@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db'
+import { getDb, ready } from '@/lib/db'
 import {
   randomBytes,
   randomUUID,
@@ -34,13 +34,19 @@ function normalizeIdentifier(identifier: string) {
   return identifier.trim().toLowerCase()
 }
 
-function findStoredUserByIdentifier(identifier: string): StoredUser | null {
+async function findStoredUserByIdentifier(
+  identifier: string,
+): Promise<StoredUser | null> {
   const normalizedIdentifier = normalizeIdentifier(identifier)
-  const db = getDb()
+  const pool = getDb()
+  await ready()
 
-  const row = db.prepare('SELECT * FROM app_users WHERE LOWER(identifier) = ?').get(normalizedIdentifier) as StoredUser | undefined
+  const { rows } = await pool.query<StoredUser>(
+    'SELECT * FROM "app_users" WHERE LOWER("identifier") = $1',
+    [normalizedIdentifier],
+  )
 
-  return row ?? null
+  return rows[0] ?? null
 }
 
 function toUserRecord(user: StoredUser): UserRecord {
@@ -97,7 +103,7 @@ export function getCategoryTree(): CATEGORY_TYPE[] {
 
 export function findCategoryById(
   targetId: number,
-  nodes: CATEGORY_TYPE[] = getCategoryTree()
+  nodes: CATEGORY_TYPE[] = getCategoryTree(),
 ): CATEGORY_TYPE | null {
   for (const node of nodes) {
     if (Number(nodeId(node)) === targetId) return node
@@ -132,27 +138,36 @@ export function getAllFilters(): SUCCES_PROPERTIES_TYPE[] {
   return dbJson.filters as unknown as SUCCES_PROPERTIES_TYPE[]
 }
 
-export function getAllUsers(): UserRecord[] {
-  const db = getDb()
-  const rows = db.prepare('SELECT * FROM app_users').all() as StoredUser[]
+export async function getAllUsers(): Promise<UserRecord[]> {
+  await ready()
+  const pool = getDb()
+  const { rows } = await pool.query<StoredUser>('SELECT * FROM "app_users"')
   return rows.map(toUserRecord)
 }
 
-export function getUserById(id: string): UserRecord | null {
-  const db = getDb()
-  const row = db.prepare('SELECT * FROM app_users WHERE id = ?').get(id) as StoredUser | undefined
+export async function getUserById(id: string): Promise<UserRecord | null> {
+  await ready()
+  const pool = getDb()
+  const { rows } = await pool.query<StoredUser>(
+    'SELECT * FROM "app_users" WHERE "id" = $1',
+    [id],
+  )
 
-  return row ? toUserRecord(row) : null
+  return rows[0] ? toUserRecord(rows[0]) : null
 }
 
-export function getUserByIdentifier(identifier: string): UserRecord | null {
-  const user = findStoredUserByIdentifier(identifier)
+export async function getUserByIdentifier(
+  identifier: string,
+): Promise<UserRecord | null> {
+  const user = await findStoredUserByIdentifier(identifier)
   return user ? toUserRecord(user) : null
 }
 
-export function createUser(input: CreateUserInput): UserRecord {
+export async function createUser(
+  input: CreateUserInput,
+): Promise<UserRecord> {
   const identifier = normalizeIdentifier(input.identifier)
-  const existingUser = getUserByIdentifier(identifier)
+  const existingUser = await getUserByIdentifier(identifier)
 
   if (existingUser) {
     const error = new Error('A user with this identifier already exists')
@@ -160,40 +175,58 @@ export function createUser(input: CreateUserInput): UserRecord {
     throw error
   }
 
-  const db = getDb()
+  await ready()
+  const pool = getDb()
   const now = new Date().toISOString()
-  const user: StoredUser = {
-    id: randomUUID(),
+  const id = randomUUID()
+
+  await pool.query(
+    `INSERT INTO "app_users" ("id", "identifier", "passwordHash", "termsAccepted", "fullname", "identifierComponent", "dob", "createdAt", "updatedAt")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [
+      id,
+      identifier,
+      '', // placeholder — better-auth handles real passwords
+      input.termsAccepted ? 1 : 0,
+      input.fullname ?? null,
+      input.identifierComponent ?? null,
+      input.dob ?? null,
+      now,
+      now,
+    ],
+  )
+
+  return toUserRecord({
+    id,
     identifier,
-    passwordHash: '', // placeholder — better-auth handles real passwords
+    passwordHash: '',
     termsAccepted: input.termsAccepted,
     fullname: input.fullname,
     identifierComponent: input.identifierComponent,
     dob: input.dob,
     createdAt: now,
     updatedAt: now,
-  }
-
-  db.prepare(
-    'INSERT INTO app_users (id, identifier, passwordHash, termsAccepted, fullname, identifierComponent, dob, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).run(user.id, user.identifier, user.passwordHash, user.termsAccepted ? 1 : 0, user.fullname ?? null, user.identifierComponent ?? null, user.dob ?? null, user.createdAt, user.updatedAt)
-
-  return toUserRecord(user)
+  })
 }
 
-export function updateUser(id: string, input: UpdateUserInput): UserRecord | null {
-  const currentUser = getUserById(id)
+export async function updateUser(
+  id: string,
+  input: UpdateUserInput,
+): Promise<UserRecord | null> {
+  const currentUser = await getUserById(id)
   if (!currentUser) return null
 
-  const db = getDb()
+  await ready()
+  const pool = getDb()
   const now = new Date().toISOString()
 
-  const fields: string[] = ['updatedAt = ?']
+  const setClauses: string[] = ['"updatedAt" = $1']
   const values: unknown[] = [now]
+  let paramIndex = 2
 
   if (input.identifier !== undefined) {
     const identifier = normalizeIdentifier(input.identifier)
-    const existingUser = getUserByIdentifier(identifier)
+    const existingUser = await getUserByIdentifier(identifier)
 
     if (existingUser && existingUser.id !== id) {
       const error = new Error('A user with this identifier already exists')
@@ -201,39 +234,47 @@ export function updateUser(id: string, input: UpdateUserInput): UserRecord | nul
       throw error
     }
 
-    fields.push('identifier = ?')
+    setClauses.push(`"identifier" = $${paramIndex}`)
     values.push(identifier)
+    paramIndex++
   }
 
   if (input.password !== undefined) {
-    // We store the hash but better-auth manages real auth
-    fields.push('passwordHash = ?')
+    setClauses.push(`"passwordHash" = $${paramIndex}`)
     values.push('') // placeholder
+    paramIndex++
   }
 
   if (input.termsAccepted !== undefined) {
-    fields.push('termsAccepted = ?')
+    setClauses.push(`"termsAccepted" = $${paramIndex}`)
     values.push(input.termsAccepted ? 1 : 0)
+    paramIndex++
   }
 
   if (input.fullname !== undefined) {
-    fields.push('fullname = ?')
+    setClauses.push(`"fullname" = $${paramIndex}`)
     values.push(input.fullname)
+    paramIndex++
   }
 
   if (input.identifierComponent !== undefined) {
-    fields.push('identifierComponent = ?')
+    setClauses.push(`"identifierComponent" = $${paramIndex}`)
     values.push(input.identifierComponent)
+    paramIndex++
   }
 
   if (input.dob !== undefined) {
-    fields.push('dob = ?')
+    setClauses.push(`"dob" = $${paramIndex}`)
     values.push(input.dob)
+    paramIndex++
   }
 
   values.push(id)
 
-  db.prepare(`UPDATE app_users SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+  await pool.query(
+    `UPDATE "app_users" SET ${setClauses.join(', ')} WHERE "id" = $${paramIndex}`,
+    values,
+  )
 
   return getUserById(id)
 }

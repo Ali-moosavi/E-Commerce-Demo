@@ -5,24 +5,24 @@ import { auth } from "@/lib/auth"
 import { createUserSchema } from "@/lib/user-schema"
 import type { CreateUserInput } from "@/lib/user-schema"
 import { redirect } from "next/navigation"
-import { getDb } from "@/lib/db"
+import { getDb, ready } from "@/lib/db"
 import { randomUUID } from "node:crypto"
 import type { PRODUCT_TYPE } from "@/types/types"
 import type { CartProduct, UserCart } from "@/types/cart"
 
 type AuthResult =
   | {
-    success: true
-    user: {
-      id: string
-      email: string
-      name: string
+      success: true
+      user: {
+        id: string
+        email: string
+        name: string
+      }
     }
-  }
   | {
-    success: false
-    error: string
-  }
+      success: false
+      error: string
+    }
 
 function getAuthErrorMessage(error: unknown) {
   if (
@@ -121,27 +121,32 @@ export async function signOutAction() {
   await auth.api.signOut({
     headers: await headers(),
   })
-  redirect('/')
+  redirect("/")
 }
 
 export async function createUserCart(userId: string, products: PRODUCT_TYPE) {
-  const db = getDb()
+  await ready()
+  const pool = getDb()
   const id = randomUUID()
   const now = new Date().toISOString()
-  const addedProducts: CartProduct[] = [{
-    productId: products.id,
-    categoryId: products.Categoryid,
-    name: products.name,
-    price: products.price,
-    images: products.image,
-    describtion: products.describtion,
-    badge: products.badge,
-    quantity: 1,
-  }]
+  const addedProducts: CartProduct[] = [
+    {
+      productId: products.id,
+      categoryId: products.Categoryid,
+      name: products.name,
+      price: products.price,
+      images: products.image,
+      describtion: products.describtion,
+      badge: products.badge,
+      quantity: 1,
+    },
+  ]
 
-  db.prepare(
-    'INSERT INTO carts (id, userId, addedProducts, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)'
-  ).run(id, userId, JSON.stringify(addedProducts), now, now)
+  await pool.query(
+    `INSERT INTO "carts" ("id", "userId", "addedProducts", "createdAt", "updatedAt")
+     VALUES ($1, $2, $3, $4, $5)`,
+    [id, userId, JSON.stringify(addedProducts), now, now],
+  )
 
   return normalizeCart({
     id: userId,
@@ -161,15 +166,21 @@ function normalizeCart(cart: UserCart): UserCart {
   }
 }
 
-export async function getUserCart(userId: string): Promise<UserCart | null> {
+export async function getUserCart(
+  userId: string,
+): Promise<UserCart | null> {
   if (!userId) return null
 
-  const db = getDb()
-  const row = db.prepare('SELECT * FROM carts WHERE userId = ?').get(userId) as {
-    id: string
-    userId: string
-    addedProducts: string
-  } | undefined
+  await ready()
+  const pool = getDb()
+  const { rows } = await pool.query(
+    'SELECT * FROM "carts" WHERE "userId" = $1',
+    [userId],
+  )
+
+  const row = rows[0] as
+    | { id: string; userId: string; addedProducts: string }
+    | undefined
 
   if (!row) return null
 
@@ -198,9 +209,12 @@ function isSameCartProduct(item: CartProduct, productKey: string) {
   return String(item.productId ?? item.name) === productKey
 }
 
-export async function addProductsToCart(userId: string, products: PRODUCT_TYPE) {
+export async function addProductsToCart(
+  userId: string,
+  products: PRODUCT_TYPE,
+) {
   if (!userId) {
-    throw new Error('A user must be signed in to use the cart')
+    throw new Error("A user must be signed in to use the cart")
   }
 
   const cart = await getUserCart(userId)
@@ -211,9 +225,10 @@ export async function addProductsToCart(userId: string, products: PRODUCT_TYPE) 
   }
 
   const productKey = String(products.id)
-  const productIndex = cart.addedProducts.findIndex((item) =>
-    isSameCartProduct(item, productKey) ||
-    (!item.productId && item.name === products.name),
+  const productIndex = cart.addedProducts.findIndex(
+    (item) =>
+      isSameCartProduct(item, productKey) ||
+      (!item.productId && item.name === products.name),
   )
   const addedProducts = [...cart.addedProducts]
 
@@ -227,12 +242,12 @@ export async function addProductsToCart(userId: string, products: PRODUCT_TYPE) 
     addedProducts.push(toCartProduct(products))
   }
 
-  const db = getDb()
+  await ready()
+  const pool = getDb()
   const now = new Date().toISOString()
-  db.prepare('UPDATE carts SET addedProducts = ?, updatedAt = ? WHERE id = ?').run(
-    JSON.stringify(addedProducts),
-    now,
-    cart.storageId ?? cart.id,
+  await pool.query(
+    'UPDATE "carts" SET "addedProducts" = $1, "updatedAt" = $2 WHERE "id" = $3',
+    [JSON.stringify(addedProducts), now, cart.storageId ?? cart.id],
   )
 }
 
@@ -252,16 +267,19 @@ export async function updateCartItemQuantity(
     )
     .filter((item) => (item.quantity ?? 0) > 0)
 
-  const db = getDb()
+  await ready()
+  const pool = getDb()
   const now = new Date().toISOString()
-  db.prepare('UPDATE carts SET addedProducts = ?, updatedAt = ? WHERE id = ?').run(
-    JSON.stringify(addedProducts),
-    now,
-    cart.storageId ?? cart.id,
+  await pool.query(
+    'UPDATE "carts" SET "addedProducts" = $1, "updatedAt" = $2 WHERE "id" = $3',
+    [JSON.stringify(addedProducts), now, cart.storageId ?? cart.id],
   )
 }
 
-export async function removeCartProduct(userId: string, productKey: string) {
+export async function removeCartProduct(
+  userId: string,
+  productKey: string,
+) {
   const cart = await getUserCart(userId)
   if (!cart) return
 
@@ -269,11 +287,11 @@ export async function removeCartProduct(userId: string, productKey: string) {
     (item) => !isSameCartProduct(item, productKey),
   )
 
-  const db = getDb()
+  await ready()
+  const pool = getDb()
   const now = new Date().toISOString()
-  db.prepare('UPDATE carts SET addedProducts = ?, updatedAt = ? WHERE id = ?').run(
-    JSON.stringify(addedProducts),
-    now,
-    cart.storageId ?? cart.id,
+  await pool.query(
+    'UPDATE "carts" SET "addedProducts" = $1, "updatedAt" = $2 WHERE "id" = $3',
+    [JSON.stringify(addedProducts), now, cart.storageId ?? cart.id],
   )
 }
