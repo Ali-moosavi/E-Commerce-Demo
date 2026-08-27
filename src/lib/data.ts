@@ -69,7 +69,8 @@ export function findCategoryById(
   categories: CATEGORY_TYPE[] = getCategoryTree(),
 ): CATEGORY_TYPE | null {
   categories.map((category)=>{
-    if (Number(nodeId(category)) === targetId) return category
+    if (Number(nodeId(category)) === targetId) {const node = category
+       return node}
     if (category.children?.length) {
       const found = findCategoryById(targetId, category.children)
       if (found) return found
