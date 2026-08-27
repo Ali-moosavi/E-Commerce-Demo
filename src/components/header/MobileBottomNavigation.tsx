@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
-export default function MobileBottomNavigation(){
+export default function MobileBottomNavigation({ isAuthenticated }: { isAuthenticated: boolean }){
 
     const [Icone1, setIcone1] = useState(true)
     const [Icone2, setIcone2] = useState(false)
@@ -65,7 +65,7 @@ export default function MobileBottomNavigation(){
                     setIcone3(false)
                     setIcone4((perv)=>!perv)
                  }}
-                 href={'/user/registeration'}
+                 href={isAuthenticated ? '/user/profile' : '/user/registeration'}
                  >
                     <PersonOutlineOutlinedIcon fontSize="inherit" />
                     <span className="text-[10px] mt-1">دیجی‌کالای من</span>
