@@ -11,9 +11,9 @@ type UserRouteContext = {
 
 function isUniqueViolation(error: unknown) {
   return (
-    typeof error === 'object' &&
-    error !== null &&
-    (('code' in error && error.code === '23505') ||
+    typeof error === 'object' && error !== null &&
+    (('code' in error &&
+      (error.code === '23505' || error.code === 'SQLITE_CONSTRAINT' || error.code === 'SQLITE_CONSTRAINT_UNIQUE')) ||
       ('status' in error && error.status === 409))
   )
 }

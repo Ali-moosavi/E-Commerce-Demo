@@ -5,7 +5,8 @@ import { auth } from "@/lib/auth"
 import { createUserSchema } from "@/lib/user-schema"
 import type { CreateUserInput } from "@/lib/user-schema"
 import { redirect } from "next/navigation"
-import axios from "axios"
+import { getDb } from "@/lib/db"
+import { randomUUID } from "node:crypto"
 import type { PRODUCT_TYPE } from "@/types/types"
 import type { CartProduct, UserCart } from "@/types/cart"
 
@@ -124,25 +125,29 @@ export async function signOutAction() {
 }
 
 export async function createUserCart(userId: string, products: PRODUCT_TYPE) {
-  const response = await axios.post<UserCart>('http://localhost:3001/cart', {
-    userId,
-    addedProducts: [{
-      productId: products.id,
-      categoryId: products.Categoryid,
-      name: products.name,
-      price: products.price,
-      images: products.image,
-      describtion: products.describtion,
-      badge: products.badge,
-      quantity: 1,
-    }],
-  })
+  const db = getDb()
+  const id = randomUUID()
+  const now = new Date().toISOString()
+  const addedProducts: CartProduct[] = [{
+    productId: products.id,
+    categoryId: products.Categoryid,
+    name: products.name,
+    price: products.price,
+    images: products.image,
+    describtion: products.describtion,
+    badge: products.badge,
+    quantity: 1,
+  }]
+
+  db.prepare(
+    'INSERT INTO carts (id, userId, addedProducts, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)'
+  ).run(id, userId, JSON.stringify(addedProducts), now, now)
 
   return normalizeCart({
-    ...response.data,
     id: userId,
     userId,
-    storageId: response.data.id,
+    storageId: id,
+    addedProducts,
   })
 }
 
@@ -159,27 +164,21 @@ function normalizeCart(cart: UserCart): UserCart {
 export async function getUserCart(userId: string): Promise<UserCart | null> {
   if (!userId) return null
 
-  try {
-    const response = await axios.get<UserCart[]>(
-      `http://localhost:3001/cart?userId=${encodeURIComponent(userId)}`,
-    )
-    const cart = response.data[0]
+  const db = getDb()
+  const row = db.prepare('SELECT * FROM carts WHERE userId = ?').get(userId) as {
+    id: string
+    userId: string
+    addedProducts: string
+  } | undefined
 
-    if (!cart) return null
+  if (!row) return null
 
-    return normalizeCart({
-      ...cart,
-      id: userId,
-      userId,
-      storageId: cart.id,
-    })
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return null
-    }
-
-    throw error
-  }
+  return normalizeCart({
+    id: userId,
+    userId,
+    storageId: row.id,
+    addedProducts: JSON.parse(row.addedProducts) as CartProduct[],
+  })
 }
 
 function toCartProduct(product: PRODUCT_TYPE): CartProduct {
@@ -228,11 +227,12 @@ export async function addProductsToCart(userId: string, products: PRODUCT_TYPE) 
     addedProducts.push(toCartProduct(products))
   }
 
-  await axios.patch(
-    `http://localhost:3001/cart/${encodeURIComponent(cart.storageId ?? cart.id)}`,
-    {
-    addedProducts,
-    },
+  const db = getDb()
+  const now = new Date().toISOString()
+  db.prepare('UPDATE carts SET addedProducts = ?, updatedAt = ? WHERE id = ?').run(
+    JSON.stringify(addedProducts),
+    now,
+    cart.storageId ?? cart.id,
   )
 }
 
@@ -252,9 +252,12 @@ export async function updateCartItemQuantity(
     )
     .filter((item) => (item.quantity ?? 0) > 0)
 
-  await axios.patch(
-    `http://localhost:3001/cart/${encodeURIComponent(cart.storageId ?? cart.id)}`,
-    { addedProducts },
+  const db = getDb()
+  const now = new Date().toISOString()
+  db.prepare('UPDATE carts SET addedProducts = ?, updatedAt = ? WHERE id = ?').run(
+    JSON.stringify(addedProducts),
+    now,
+    cart.storageId ?? cart.id,
   )
 }
 
@@ -262,12 +265,15 @@ export async function removeCartProduct(userId: string, productKey: string) {
   const cart = await getUserCart(userId)
   if (!cart) return
 
-  await axios.patch(
-    `http://localhost:3001/cart/${encodeURIComponent(cart.storageId ?? cart.id)}`,
-    {
-      addedProducts: cart.addedProducts.filter(
-        (item) => !isSameCartProduct(item, productKey),
-      ),
-    },
+  const addedProducts = cart.addedProducts.filter(
+    (item) => !isSameCartProduct(item, productKey),
+  )
+
+  const db = getDb()
+  const now = new Date().toISOString()
+  db.prepare('UPDATE carts SET addedProducts = ?, updatedAt = ? WHERE id = ?').run(
+    JSON.stringify(addedProducts),
+    now,
+    cart.storageId ?? cart.id,
   )
 }
