@@ -16,9 +16,9 @@ export default function MobileBottomNavigation({ isAuthenticated }: { isAuthenti
     const Location = usePathname()
         const isCartRoute = Location.startsWith('/user/cart')
 
-    return  <>
+    return  <nav className={`lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-between items-center px-6 py-2 z-50 ${isCartRoute ? 'hidden' : ''}`}>
               <Link 
-            className={`flex flex-col items-center cursor-pointer text-[25px] ${Icone1? 'text-gray-800' :'text-gray-500'} ${isCartRoute ? 'hidden' : ''}`}
+            className={`flex flex-col items-center cursor-pointer text-[25px] ${Icone1? 'text-gray-800' :'text-gray-500'} `}
                 onClick={()=>{
                     setIcone1((perv)=>!perv)
                     setIcone2(false)
@@ -31,7 +31,7 @@ export default function MobileBottomNavigation({ isAuthenticated }: { isAuthenti
                     <span className="text-[10px] mt-1 font-bold">خانه</span>
                 </Link>
                 <Link
-                className={`flex flex-col items-center cursor-pointer text-[25px] ${Icone2? 'text-gray-800' :'text-gray-500'} ${isCartRoute ? 'hidden' : ''}`}
+                className={`flex flex-col items-center cursor-pointer text-[25px] ${Icone2? 'text-gray-800' :'text-gray-500'} `}
                  onClick={()=>{
                     setIcone1(false)
                     setIcone2((perv)=>!perv)
@@ -44,7 +44,7 @@ export default function MobileBottomNavigation({ isAuthenticated }: { isAuthenti
                     <span className="text-[10px] mt-1">دسته‌بندی</span>
                 </Link>
                 <Link 
-                className={`flex flex-col items-center cursor-pointer text-[25px] ${Icone3? 'text-gray-800' :'text-gray-500'} ${isCartRoute ? 'hidden' : ''}`}
+                className={`flex flex-col items-center cursor-pointer text-[25px] ${Icone3? 'text-gray-800' :'text-gray-500'} `}
                 onClick={()=>{
                     setIcone1(false)
                     setIcone2(false)
@@ -58,7 +58,7 @@ export default function MobileBottomNavigation({ isAuthenticated }: { isAuthenti
                     <span className="text-[10px] mt-1">سبد خرید</span>
                 </Link>
                 <Link
-                 className={`flex flex-col items-center cursor-pointer text-[25px] ${Icone4? 'text-gray-800' :'text-gray-500'} ${isCartRoute ? 'hidden' : ''}`}
+                 className={`flex flex-col items-center cursor-pointer text-[25px] ${Icone4? 'text-gray-800' :'text-gray-500'} `}
                  onClick={()=>{
                     setIcone1(false)
                     setIcone2(false)
@@ -70,5 +70,5 @@ export default function MobileBottomNavigation({ isAuthenticated }: { isAuthenti
                     <PersonOutlineOutlinedIcon fontSize="inherit" />
                     <span className="text-[10px] mt-1">دیجی‌کالای من</span>
                 </Link>
-    </>
+    </nav>
 }

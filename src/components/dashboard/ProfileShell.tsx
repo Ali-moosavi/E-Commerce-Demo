@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useSyncExternalStore } from "react"
+import { useState, useSyncExternalStore } from "react"
 import {
   Bell,
   ChevronLeft,
@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { authClient } from "@/lib/auth-clients"
 import SignOutButton from "./Sign-Out-Button"
+import SideBar from "./SideBar"
 
 type ProfileSession = typeof authClient.$Infer.Session
 
@@ -33,10 +34,7 @@ const navItems = [
   { label: "اطلاعات حساب کاربری", href: "/user/profile/personal-info", icon: UserRound },
 ]
 
-function isActive(pathname: string, href: string) {
-  if (href === "/user/profile") return pathname === href || pathname === `${href}/`
-  return pathname.startsWith(href)
-}
+
 
 export default function ProfileShell({
   children,
@@ -47,12 +45,9 @@ export default function ProfileShell({
 }) {
   const pathname = usePathname()
   const { data: clientSession } = authClient.useSession()
-  const hydrated = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  )
-  const session = hydrated ? clientSession ?? initialSession : initialSession
+  const [active, setActive] = useState('/user/profile')
+
+  const session = clientSession ?? initialSession
 
   const user = session.user
   const initials = user.name
@@ -74,18 +69,6 @@ export default function ProfileShell({
           </div>
         </div>
 
-        <div className="mb-4 flex gap-2 overflow-x-auto pb-1 lg:hidden">
-          {navItems.slice(0, 4).map((item) => {
-            const Icon = item.icon
-            const active = isActive(pathname, item.href)
-            return (
-              <Link key={item.href} href={item.href} className={`profile-mobile-tab flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-xs ${active ? "profile-mobile-tab-active" : ""}`}>
-                <Icon className="size-4" />{item.label}
-              </Link>
-            )
-          })}
-        </div>
-
         <div className="grid items-start gap-5 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-6">
           <aside className="hidden overflow-hidden rounded-xl border border-[#e6e6e8] bg-white lg:block">
             <div className="border-b border-[#f0f0f1] p-5">
@@ -101,16 +84,11 @@ export default function ProfileShell({
             <div className="grid grid-cols-3 divide-x divide-x-reverse divide-[#f0f0f1] border-b border-[#f0f0f1] text-center">
               {["امتیاز", "کیف پول", "دیجی‌کلاب"].map((label) => <div key={label} className="px-2 py-4"><div className="text-sm font-[iransansBold] text-[#23254e]">۰</div><div className="mt-1 text-[10px] text-[#81858b]">{label}</div></div>)}
             </div>
-            <nav className="py-2">
-              {navItems.map((item) => {
-                const Icon = item.icon
-                const active = isActive(pathname, item.href)
-                return <Link key={item.href} href={item.href} className={`profile-sidebar-item ${active ? "profile-sidebar-item-active" : ""}`}><Icon className="size-[18px]" /><span>{item.label}</span><ChevronLeft className="mr-auto size-4 opacity-50" /></Link>
-              })}
-            </nav>
-            <div className="border-t border-[#f0f0f1]"><SignOutButton /></div>
+            <SideBar/>
+            
           </aside>
           <section className="min-w-0 space-y-5">{children}</section>
+
         </div>
       </div>
     </main>

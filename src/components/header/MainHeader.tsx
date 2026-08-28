@@ -1,11 +1,11 @@
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
-import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
 import HeaderInput from "./headerInput";
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import HeaderCategory from "./HeaderCategory";
 import MobileBottomNavigation from "./MobileBottomNavigation";
 import Link from "next/link";
-import { Bell, Headphones, Settings, UserRoundIcon } from "lucide-react";
+import { Bell, Headphones, Settings } from "lucide-react";
+import AccountHoverMenu from "./AccountHoverMenu";
+import CartHoverMenu from "./CartHoverMenu";
 
 export  default function MainHeader({
     CategoryHeader,
@@ -118,13 +118,9 @@ export  default function MainHeader({
                             <ul className="flex  gap-5 items-center ">
                                 <li className="opacity-70 lg:text-[28px] text-[24px] bg-white py-0.5 px-2  rounded-full border lg:border-0"><NotificationsNoneIcon fontSize="inherit" /></li>
 
-                                <li
-                                    className={`${isAuthenticated ? '' : 'border border-gray-200'}  py-2 px-8 rounded-lg text-xs font-[iransansBold] whitespace-nowrap overflow-hidden lg:block hidden`}
-                                ><Link href={isAuthenticated ? '/user/profile' : '/user/registeration'}>{
-                                    isAuthenticated ? <span className="flex items-center text-sm"><UserRoundIcon/> <PlayArrowIcon sx={{transform:'rotate(90deg)'}} fontSize="inherit"/></span> : 'ورود | ثبت نام'
-                                }</Link></li>
+                                <AccountHoverMenu isAuthenticated={isAuthenticated} />
                                 <div className="hidden lg:block h-6 opacity-10 w-px bg-black"></div>
-                                <Link href={`/user/cart`} className="opacity-70 text-[28px] lg:block hidden"><ShoppingCartOutlinedIcon fontSize="inherit" /></Link>
+                                <CartHoverMenu />
                             </ul>
 
                         </div>
@@ -146,9 +142,9 @@ export  default function MainHeader({
                 </div>
 
             </header>
-            <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-between items-center px-6 py-2 z-50">
+        
                 <MobileBottomNavigation isAuthenticated={isAuthenticated}/>
-            </nav>
+            
         </>
     )
 }

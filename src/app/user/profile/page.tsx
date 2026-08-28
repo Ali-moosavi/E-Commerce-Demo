@@ -2,9 +2,40 @@ import Link from "next/link"
 import { ChevronLeft, Clock3, PackageCheck, RotateCcw, Truck } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { requireServerSession } from "@/lib/auth"
+import {
+  Bell,
+  Gift,
+  Heart,
+  Home,
+  MapPin,
+  MessageCircle,
+  Pencil,
+  ShoppingBag,
+  UserRound,
+} from "lucide-react"
+import SideBar from "@/components/dashboard/SideBar"
 
 export default async function ProfilePage() {
   await requireServerSession()
+
+  const navItems = [
+    { label: "خلاصه فعالیت‌ها", href: "/user/profile", icon: Home },
+    { label: "سفارش‌های من", href: "/user/profile/orders", icon: ShoppingBag },
+    { label: "لیست‌های من", href: "/user/profile/my-lists", icon: Heart },
+    { label: "نظرات و پرسش‌ها", href: "/user/profile/activities", icon: MessageCircle },
+    { label: "آدرس‌ها", href: "/user/profile/address", icon: MapPin },
+    { label: "کارت‌های هدیه", href: "/user/profile/gift-cards", icon: Gift },
+    { label: "پیام‌ها", href: "/user/profile/messages", icon: Bell },
+    { label: "بازدیدهای اخیر", href: "/user/profile/recents", icon: Clock3 },
+    { label: "اطلاعات حساب کاربری", href: "/user/profile/personal-info", icon: UserRound },
+  ]
+
+  function isActive(pathname: string, href: string) {
+    if (href === "/user/profile") return pathname === href || pathname === `${href}/`
+    return pathname.startsWith(href)
+  }
+
+
 
   return (
     <>
@@ -19,6 +50,9 @@ export default async function ProfilePage() {
           <SummaryItem icon={Truck} count="۰" label="جاری" tone="blue" />
           <SummaryItem icon={PackageCheck} count="۰" label="تحویل شده" tone="green" />
           <SummaryItem icon={RotateCcw} count="۰" label="مرجوع شده" tone="orange" />
+        </CardContent>
+        <CardContent className="lg:hidden">
+         <SideBar/>
         </CardContent>
       </Card>
 
