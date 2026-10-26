@@ -21,7 +21,9 @@ import { headers } from 'next/headers'
 import { getUserCart } from '@/components/actions/actions'
 
 const faDigits = (value: number) =>
-  new Intl.NumberFormat('fa-IR').format(value)
+   new Intl.NumberFormat('fa-IR').format(value)
+
+ 
 
 async function getProduct(id: string): Promise<PRODUCT_TYPE | null> {
   return getProductById(Number(id)) ?? null

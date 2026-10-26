@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { ChevronLeft, Clock3, PackageCheck, RotateCcw, Truck } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { requireServerSession } from "@/lib/auth"
 import {
   Bell,
   Gift,
@@ -16,7 +15,7 @@ import {
 import SideBar from "@/components/dashboard/SideBar"
 
 export default async function ProfilePage() {
-  await requireServerSession()
+
 
   const navItems = [
     { label: "خلاصه فعالیت‌ها", href: "/user/profile", icon: Home },

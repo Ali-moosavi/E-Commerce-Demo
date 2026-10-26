@@ -24,32 +24,15 @@ type AuthResult =
       error: string
     }
 
-function getAuthErrorMessage(error: unknown) {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string"
-  ) {
-    return error.message
-  }
-
-  return "Authentication failed. Please try again."
-}
 
 export async function userExist({ identifier }: { identifier: string }) {
   const email = identifier.trim().toLowerCase()
 
   if (!email) return false
 
-  try {
-    await ready()
-    const context = await auth.$context
-    const userRecord = await context.internalAdapter.findUserByEmail(email)
-    return Boolean(userRecord?.user)
-  } catch {
-    return false
-  }
+  const context = await auth.$context
+  const userRecord = await context.internalAdapter.findUserByEmail(email)
+  return Boolean(userRecord?.user)
 }
 
 export async function signUpUser(data: CreateUserInput): Promise<AuthResult> {
@@ -63,28 +46,27 @@ export async function signUpUser(data: CreateUserInput): Promise<AuthResult> {
   }
 
   try {
-    await ready()
-    const response = await auth.api.signUpEmail({
-      body: {
+        const response = await auth.api.signUpEmail({body: {
         email: parsed.data.identifier.trim().toLowerCase(),
         password: parsed.data.password,
         name: parsed.data.fullname.trim(),
       },
     })
+    console.log(response)
 
     return {
       success: true,
       user: {
-        id: response.user.id,
-        email: response.user.email,
-        name: response.user.name,
+        id: response?.user?.id,
+        email: response?.user?.email,
+        name: response?.user?.name,
       },
     }
   } catch (error) {
     console.error('[auth] signUpEmail failed:', error)
     return {
       success: false,
-      error: getAuthErrorMessage(error),
+      error:"some thing went wrong try again",
     }
   }
 }
@@ -97,7 +79,6 @@ export async function signInUser({
   password: string
 }): Promise<AuthResult> {
   try {
-    await ready()
     const response = await auth.api.signInEmail({
       body: {
         email: identifier.trim().toLowerCase(),
@@ -117,7 +98,7 @@ export async function signInUser({
     console.error('[auth] signInEmail failed:', error)
     return {
       success: false,
-      error: getAuthErrorMessage(error),
+      error: "some thing went wrong try again",
     }
   }
 }

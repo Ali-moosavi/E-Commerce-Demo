@@ -1,0 +1,174 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model categories {
+  categoryId String          @id @default(cuid()) @map("category_id")
+  name       String          @map("name")
+  children   childCategory[]
+
+  @@map("categories")
+}
+
+model childCategory {
+  childCategoryId  String               @id @default(cuid()) @map("child_category_id")
+  name             String               @map("name")
+  parentcategoryid String
+  parent           categories           @relation(fields: [parentcategoryid], references: [categoryId], onDelete: Cascade)
+  children         grandChildCategory[]
+
+  @@index([parentcategoryid])
+  @@map("child_category")
+}
+
+model grandChildCategory {
+  grandChildCategoryId String              @id @default(cuid()) @map("grand_child_category_id")
+  name                 String              @map("name")
+  parentcategoryid     String              @map("parent_category_id")
+  parent               childCategory       @relation(fields: [parentcategoryid], references: [childCategoryId], onDelete: Cascade)
+  products             grandChildProduct[]
+
+  @@index([parentcategoryid])
+  @@map("grand_child_category")
+}
+
+model grandChildProduct {
+  id                 String             @id @default(cuid())
+  name               String
+  description        String
+  categoryId         String             @map("category_id")
+  price              Decimal @db.Decimal(12, 2)
+  rate               Decimal @db.Decimal(2, 1)
+  images             String[]
+  badge              String? 
+  grandChildCategory grandChildCategory @relation(fields: [categoryId], references: [grandChildCategoryId], onDelete: Cascade)
+  properties         productsproperty[]
+  pageDetails        pageDetails?
+}
+
+model productsproperty {
+  id String @id @default(cuid()) 
+  productId String @map("product_id")
+  optionId String @map("option_id")
+
+  grandChildProduct  grandChildProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  option            propertiesOption  @relation(fields: [optionId], references: [optionId], onDelete: Cascade)
+}
+
+model properties{
+  propertyCategoryId String @id @default(cuid())
+  name String
+  nameFa String
+  propertyOptions propertiesOption[]
+}
+
+model propertiesOption{
+  optionId String @id @default(cuid()) @map("option_id")
+  parentPropertyId String @map("parent_property_id")
+  name String
+  nameFa String @map("name_fa")
+  products  productsproperty[]
+  properties properties @relation(fields: [parentPropertyId], references: [propertyCategoryId], onDelete: Cascade)
+}
+
+model pageDetails {
+  id                 String             @id @default(cuid())
+  brandName String @map("brand_name")
+  productGroup String @map("product_group")
+  ratingCount Int @map("rating_count")
+  commentCount Int @map("comment_count")
+  questionCount Int @map("question_count")
+  featureHighlights featureHighlights[]
+  currency String
+  introduction String
+  expertreview String @map("expert_review")
+  specifications specifications[]
+  product grandChildProduct @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+model featureHighlights {
+  id String @id @default(cuid())
+  label String
+  value String
+  pageDetails pageDetails @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+model specifications{
+  id String @id @default(cuid())
+  label String
+  value String
+  pageDetails pageDetails @relation(fields: [id], references: [id], onDelete: Cascade)
+}

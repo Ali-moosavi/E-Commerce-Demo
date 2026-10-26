@@ -6,3 +6,5 @@ out/
 *.db-journal
 *.db-wal
 *.db-shm
+
+/src/generated/prisma

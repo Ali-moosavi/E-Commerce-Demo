@@ -27,6 +27,7 @@ export async function generateStaticParams() {
   }))
 }
 
+
 interface PageProps {
   params: Promise<{ categoryid: string }>
 }
